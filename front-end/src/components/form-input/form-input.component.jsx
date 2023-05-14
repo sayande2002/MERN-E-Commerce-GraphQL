@@ -1,14 +1,11 @@
-import { FormInputLabel, Input, Group } from './form-input.styles';
+import { FormInputLabel, Input, Group } from "./form-input.styles";
 
-const FormInput = ({ label, ...otherProps }) => {
+const FormInput = ({ label, register, errorMessage, ...otherProps }) => {
   return (
     <Group>
-      <Input {...otherProps} />
-      {label && (
-        <FormInputLabel shrink={otherProps.value.length}>
-          {label}
-        </FormInputLabel>
-      )}
+      <FormInputLabel>{label}</FormInputLabel>
+      <Input {...register} {...otherProps} />
+      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
     </Group>
   );
 };

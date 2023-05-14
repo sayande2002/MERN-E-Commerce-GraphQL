@@ -1,102 +1,83 @@
-import { useState } from 'react';
+import React from "react";
 
-import FormInput from '../form-input/form-input.component';
-import Button from '../button/button.component';
+import FormInput from "../form-input/form-input.component";
+import Button from "../button/button.component";
 
-import {
-  createAuthUserWithEmailAndPassword,
-  createUserDocumentFromAuth,
-} from '../../utils/firebase/firebase.utils';
-
-import { SignUpContainer } from './sign-up-form.styles';
-
-const defaultFormFields = {
-  displayName: '',
-  email: '',
-  password: '',
-  confirmPassword: '',
-};
+import { SignUpContainer } from "./sign-up-form.styles";
+import { signUpSchema } from "../../lib/yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm } from "react-hook-form";
+import { toastify } from "../../lib/toast";
+import { useNavigate } from "react-router-dom";
 
 const SignUpForm = () => {
-  const [formFields, setFormFields] = useState(defaultFormFields);
-  const { displayName, email, password, confirmPassword } = formFields;
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(signUpSchema),
+  });
 
-  const resetFormFields = () => {
-    setFormFields(defaultFormFields);
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    if (password !== confirmPassword) {
-      alert('passwords do not match');
-      return;
+  const onSubmit = async ({ name, email, password }) => {
+    let result = await fetch("http://localhost:4000/api/v1/signup", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    result = await result.json();
+    if (result.success) {
+      localStorage.setItem("token", result.token);
+      toastify("Welcome", "success");
+      navigate("/");
+      window.location.reload(true);
+      reset();
+    } else {
+      toastify("User already exists ! Try to Log In", "error");
     }
-
-    try {
-      const { user } = await createAuthUserWithEmailAndPassword(
-        email,
-        password
-      );
-
-      await createUserDocumentFromAuth(user, { displayName });
-      resetFormFields();
-    } catch (error) {
-      if (error.code === 'auth/email-already-in-use') {
-        alert('Cannot create user, email already in use');
-      } else {
-        console.log('user creation encountered an error', error);
-      }
-    }
-  };
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setFormFields({ ...formFields, [name]: value });
   };
 
   return (
     <SignUpContainer>
       <h2>Don't have an account?</h2>
       <span>Sign up with your email and password</span>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <FormInput
-          label='Display Name'
-          type='text'
-          required
-          onChange={handleChange}
-          name='displayName'
-          value={displayName}
+          label="Display Name"
+          type="text"
+          name="name"
+          register={{ ...register("name") }}
+          errorMessage={errors.name?.message}
         />
 
         <FormInput
-          label='Email'
-          type='email'
-          required
-          onChange={handleChange}
-          name='email'
-          value={email}
+          label="Email"
+          type="text"
+          name="email"
+          register={{ ...register("email") }}
+          errorMessage={errors.email?.message}
         />
 
         <FormInput
-          label='Password'
-          type='password'
-          required
-          onChange={handleChange}
-          name='password'
-          value={password}
+          label="Password"
+          type="password"
+          name="password"
+          register={{ ...register("password") }}
+          errorMessage={errors.password?.message}
         />
 
         <FormInput
-          label='Confirm Password'
-          type='password'
-          required
-          onChange={handleChange}
-          name='confirmPassword'
-          value={confirmPassword}
+          label="Confirm Password"
+          type="password"
+          name="confirmPassword"
+          register={{ ...register("confirmPassword") }}
+          errorMessage={errors.confirmPassword?.message}
         />
-        <Button type='submit'>Sign Up</Button>
+        <Button type="submit">Sign Up</Button>
       </form>
     </SignUpContainer>
   );

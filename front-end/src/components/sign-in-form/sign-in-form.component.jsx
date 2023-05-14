@@ -1,80 +1,69 @@
-import { useState } from 'react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
 
-import FormInput from '../form-input/form-input.component';
-import Button, { BUTTON_TYPE_CLASSES } from '../button/button.component';
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 
-import {
-  signInAuthUserWithEmailAndPassword,
-  signInWithGooglePopup,
-} from '../../utils/firebase/firebase.utils';
+import FormInput from "../form-input/form-input.component";
+import Button from "../button/button.component";
 
-import { SignInContainer, ButtonsContainer } from './sign-in-form.styles';
+import { toastify } from "../../lib/toast";
+import { logInSchema } from "../../lib/yup";
 
-const defaultFormFields = {
-  email: '',
-  password: '',
-};
+import { SignInContainer, ButtonsContainer } from "./sign-in-form.styles";
 
 const SignInForm = () => {
-  const [formFields, setFormFields] = useState(defaultFormFields);
-  const { email, password } = formFields;
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(logInSchema),
+  });
 
-  const resetFormFields = () => {
-    setFormFields(defaultFormFields);
-  };
-
-  const signInWithGoogle = async () => {
-    await signInWithGooglePopup();
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
-    try {
-      await signInAuthUserWithEmailAndPassword(email, password);
-      resetFormFields();
-    } catch (error) {
-      console.log('user sign in failed', error);
+  const onSubmit = async ({ email, password }) => {
+    console.log({ email, password });
+    let result = await fetch("http://localhost:4000/api/v1/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    result = await result.json();
+    if (result.success) {
+      toastify(result.message, "success");
+      navigate("/");
+      reset();
+    } else {
+      toastify("Incorrect email or password.", "error");
     }
-  };
-
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-
-    setFormFields({ ...formFields, [name]: value });
   };
 
   return (
     <SignInContainer>
       <h2>Already have an account?</h2>
       <span>Sign in with your email and password</span>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <FormInput
-          label='Email'
-          type='email'
-          required
-          onChange={handleChange}
-          name='email'
-          value={email}
+          label="Email"
+          type="text"
+          register={{ ...register("email") }}
+          errorMessage={errors.email?.message}
+          name="email"
         />
 
         <FormInput
-          label='Password'
-          type='password'
-          required
-          onChange={handleChange}
-          name='password'
-          value={password}
+          label="Password"
+          type="password"
+          register={{ ...register("password") }}
+          errorMessage={errors.password?.message}
+          name="password"
         />
         <ButtonsContainer>
-          <Button type='submit'>Sign In</Button>
-          <Button
-            buttonType={BUTTON_TYPE_CLASSES.google}
-            type='button'
-            onClick={signInWithGoogle}
-          >
-            Sign In With Google
-          </Button>
+          <Button type="submit">Sign In</Button>
         </ButtonsContainer>
       </form>
     </SignInContainer>

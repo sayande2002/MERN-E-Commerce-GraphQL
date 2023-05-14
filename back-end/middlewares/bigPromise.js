@@ -1,4 +1,6 @@
 //try catch and async - await || use promise
 
-module.exports = func => (req, res, next) =>
-Promise.resolve(func(req,res,next)).catch(next);
+module.exports = (func) => (req, res, next) =>
+  Promise.resolve(func(req, res, next)).catch(next);
+
+// ! Handle all promises to avoid try catch

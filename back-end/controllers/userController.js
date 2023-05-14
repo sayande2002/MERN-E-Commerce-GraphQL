@@ -4,15 +4,24 @@ const CustomError = require("../utils/customError");
 const cookieToken = require("../utils/cookieToken");
 const cloudinary = require("cloudinary");
 // const mailHelper = require('../utils/emailHelper')
-const crypto = require("crypto");
-const { log } = require("console");
+// const crypto = require("crypto");
+// const { log } = require("console");
 
 exports.signup = BigPromise(async (req, res, next) => {
-
   const { name, email, password } = req.body;
 
   if (!email || !name || !password) {
     return next(new CustomError("Name, email and password are required", 400));
+  }
+
+  //check the email if exists in the database
+  const finduser = await User.findOne({ email }).select("+password");
+
+  //if the email exists then the user should try logging in
+  if (finduser) {
+    return next(
+      new CustomError("User already exits try logging in", 400, false)
+    );
   }
 
   const user = await User.create({
@@ -64,3 +73,4 @@ exports.logout = BigPromise(async (req, res, next) => {
     message: "Logout success",
   });
 });
+// ! Auth Logic
